@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise CRM Suite</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js">
+    </script>
+    <!-- SheetJS CDN for Excel/CSV Import/Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+    </script>
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --topbar-height: 70px;
+            --transition-speed: 0.25s;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            overflow-x: hidden;
+        }
+
+        #app-wrapper {
+            display: flex;
+            min-height: 100vh;
+            width: 100vw;
+        }
+
+        #sidebar {
+            width: var(--sidebar-width);
+            background: var(--bs-tertiary-bg);
+            border-right: 1px solid var(--bs-border-color);
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1030;
+            transition: transform var(--transition-speed) ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            transition: margin-left var(--transition-speed) ease;
+        }
+
+        #topbar {
+            height: var(--topbar-height);
+            background: var(--bs-body-bg);
+            border-bottom: 1px solid var(--bs-border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+
+        .sidebar-brand {
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--bs-primary);
+            border-bottom: 1px solid var(--bs-border-color);
+        }
+
+        .nav-link-custom {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            color: var(--bs-secondary-color);
+            border-radius: 0.5rem;
+            margin: 0.25rem 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .nav-link-custom:hover {
+            color: var(--bs-primary);
+            background: rgba(13, 110, 253, 0.08);
+        }
+
+        .nav-link-custom.active {
+            color: #ffffff !important;
+            background: var(--bs-primary) !important;
+            font-weight: 600;
+        }
+
+        .nav-link-custom i {
+            font-size: 1.2rem;
+            margin-right: 0.75rem;
+        }
+
+        .metric-card {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.75rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+        }
+
+        .icon-shape {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--bs-border-color);
+            border-radius: 0.75rem;
+            padding: 2.5rem;
+            text-align: center;
+            background: var(--bs-tertiary-bg);
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .drop-zone.dragover {
+            border-color: var(--bs-primary);
+            background: rgba(13, 110, 253, 0.05);
+        }
+
+        .comment-item {
+            border-left: 3px solid var(--bs-primary);
+            background: var(--bs-tertiary-bg);
+            padding: 0.75rem 1rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+            margin-bottom: 0.75rem;
+        }
+
+        @media (max-width: 991.98px) {
+            #sidebar {
+                transform: translateX(-100%);
+            }
+            #sidebar.show {
+                transform: translateX(0);
+            }
+            #main-content {
+                margin-left: 0;
+            }
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 1090;
+        }
+
+        .avatar-initials {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--bs-primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .call-btn {
+            background: #198754;
+            border: none;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1.5rem;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+        }
+        .call-btn:hover { background: #157347; color: white; }
+        .aiphone-btn {
+            background: #0d6efd;
+            border: none;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1.5rem;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+        }
+        .aiphone-btn:hover { background: #0b5ed7; color: white; }
+
+        .bulk-action-bar {
+            background: var(--bs-tertiary-bg);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .status-badge-new { background-color: #6f42c1; color: white; }
+        .status-badge-no-answer { background-color: #fd7e14; color: white; }
+        .status-badge-not-interested { background-color: #dc3545; color: white; }
+        .status-badge-wrong-number { background-color: #6c757d; color: white; }
+        .status-badge-customer { background-color: #198754; color: white; }
+        .status-badge-contacted { background-color: #0d6efd; color: white; }
+        .status-badge-proposal { background-color: #ffc107; color: #000; }
+        .status-badge-inactive { background-color: #adb5bd; color: #000; }
+        .status-badge-voicemail { background-color: #0dcaf0; color: #000; }
+        .status-badge-callback { background-color: #20c997; color: white; }
+
+        .table td { vertical-align: middle; }
+
+        .lang-switch { display: flex; align-items: center; gap: 0.35rem; }
+        .lang-switch i { color: var(--bs-secondary-color); }
+        .lang-switch select { width: auto; min-width: 110px; cursor: pointer; }
+
+        .calling-indicator {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            background: linear-gradient(135deg, #198754, #157347); color: white;
+            padding: 12px 20px; border-radius: 2rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            display: flex; align-items: center; gap: 12px;
+            animation: pulse 1.5s infinite; font-weight: 600; font-size: 0.95rem; max-width: 400px;
+        }
+        .calling-indicator.hidden { display: none; }
+        .calling-indicator .spinner-border { width: 20px; height: 20px; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.6); }
+            70% { box-shadow: 0 0 0 18px rgba(25, 135, 84, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+        }
+        .calling-indicator .hangup-btn {
+            background: rgba(255,255,255,0.25); border: none; color: white;
+            border-radius: 50%; width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1rem; transition: 0.2s;
+        }
+        .calling-indicator .hangup-btn:hover { background: rgba(220,53,69,0.9); }
+
+        .auto-dialer-panel {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 1050; background: var(--bs-body-bg);
+            border: 2px solid var(--bs-primary); border-radius: 1rem;
+            padding: 1rem 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 420px; max-width: 580px; display: none;
+        }
+        .auto-dialer-panel.show { display: block; }
+        .auto-dialer-panel .progress { height: 8px; border-radius: 4px; }
+        .auto-dialer-btn {
+            background: linear-gradient(135deg, #6f42c1, #0d6efd);
+            border: none; color: white; padding: 0.4rem 1rem;
+            border-radius: 2rem; font-weight: 600; font-size: 0.85rem;
+            transition: 0.2s; cursor: pointer;
+        }
+        .auto-dialer-btn:hover { opacity: 0.9; }
+        .auto-dialer-btn.stop { background: linear-gradient(135deg, #dc3545, #fd7e14); }
+
+        .dialer-status-btn {
+            border: none; color: white; padding: 0.3rem 0.6rem;
+            border-radius: 1.5rem; font-size: 0.75rem; font-weight: 600;
+            cursor: pointer; transition: 0.2s; white-space: nowrap;
+        }
+        .dialer-status-btn:hover { opacity: 0.85; transform: scale(1.03); }
+        .dialer-status-btn.no-answer { background: #fd7e14; }
+        .dialer-status-btn.not-interested { background: #dc3545; }
+        .dialer-status-btn.voicemail { background: #0dcaf0; color: #000; }
+        .dialer-status-btn.callback { background: #20c997; }
+
+        .dialer-calling-box {
+            background: linear-gradient(135deg, #198754, #157347); color: #fff;
+            border-radius: 0.75rem; padding: 0.75rem 1rem;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 0.75rem; animation: pulse 1.5s infinite;
+        }
+        .dialer-calling-box .spinner-border { width: 18px; height: 18px; }
+        .dialer-calling-box .hangup-btn {
+            background: rgba(255,255,255,0.25); border: none; color: #fff;
+            border-radius: 50%; width: 32px; height: 32px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1rem; transition: 0.2s;
+        }
+        .dialer-calling-box .hangup-btn:hover { background: rgba(220,53,69,0.9); }
+    </style>
+</head>
+<body>
+
+<div id="loginOverlay" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0d6efd,#6f42c1);display:flex;align-items:center;justify-content:center;">
+    <div style="position:absolute;top:1rem;right:1rem;" class="lang-switch">
+        <i class="bi bi-translate text-white"></i>
+        <select class="form-select form-select-sm lang-select" onchange="setLang(this.value)" aria-label="Language / Sprache">
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+        </select>
+    </div>
+    <div style="background:#fff;border-radius:1rem;padding:2.5rem 2rem;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+        <div class="text-center mb-4"><i class="bi bi-briefcase-fill text-primary" style="font-size:2.5rem;"></i><h4 class="fw-bold mt-2 mb-0">ApexCRM</h4><small class="text-muted" data-i18n="login.sub">Please sign in to continue</small></div>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="mb-3"><label class="form-label small fw-bold" data-i18n="login.user">Username</label><input type="text" id="login-user" class="form-control" autocomplete="username" required></div>
+            <div class="mb-3"><label class="form-label small fw-bold" data-i18n="login.pass">Password</label><input type="password" id="login-pass" class="form-control" autocomplete="current-password" required></div>
+            <div id="loginError" class="text-danger small mb-2 d-none" data-i18n="login.err">Invalid username or password.</div>
+            <button type="submit" class="btn btn-primary w-100" data-i18n="login.btn">Sign In</button>
+        </form>
+    </div>
+</div>
+
+<div id="app-wrapper" style="display:none;">
+    <aside id="sidebar">
+        <div class="sidebar-brand"><i class="bi bi-briefcase-fill text-primary me-2"></i><span>ThomasCRM</span></div>
+        <div class="p-2 flex-grow-1 overflow-y-auto">
+            <small class="text-uppercase text-muted fw-bold px-3 d-block my-2" style="font-size:0.7rem;" data-i18n="nav.main">Main Menu</small>
+            <a href="#" class="nav-link-custom active" onclick="switchTab('dashboard',event)"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="#" class="nav-link-custom" onclick="switchTab('customers',event)"><i class="bi bi-people-fill"></i> <span data-i18n="nav.customers">Customers</span></a>
+            <a href="#" class="nav-link-custom" onclick="switchTab('import-export',event)"><i class="bi bi-file-earmark-spreadsheet-fill"></i> <span data-i18n="nav.importexport">Import / Export</span></a>
+            <small class="text-uppercase text-muted fw-bold px-3 d-block mt-4 mb-2" style="font-size:0.7rem;" data-i18n="nav.quick">Quick Filters</small>
+            <a href="#" class="nav-link-custom" onclick="filterByStatus('New',event)"><i class="bi bi-star-fill text-purple"></i> <span data-i18n="st.New">New</span></a>
+            <a href="#" class="nav-link-custom" onclick="filterByStatus('No Answer',event)"><i class="bi bi-telephone-x-fill text-warning"></i> <span data-i18n="st.No Answer">No Answer</span></a>
+            <a href="#" class="nav-link-custom" onclick="filterByStatus('Not Interested',event)"><i class="bi bi-hand-thumbs-down-fill text-danger"></i> <span data-i18n="st.Not Interested">Not Interested</span></a>
+            <a href="#" class="nav-link-custom" onclick="filterByStatus('Wrong Number',event)"><i class="bi bi-exclamation-triangle-fill text-secondary"></i> <span data-i18n="st.Wrong Number">Wrong Number</span></a>
+            <a href="#" class="nav-link-custom" onclick="filterByStatus('Customer',event)"><i class="bi bi-check-circle-fill text-success"></i> <span data-i18n="nav.customers">Customers</span></a>
+            <a href="#" class="nav-link-custom" onclick="filterByArchive(true,event)"><i class="bi bi-archive-fill text-warning"></i> <span data-i18n="nav.archived">Archived</span></a>
+            <hr class="my-2 mx-3">
+            <a href="#" class="nav-link-custom text-primary" onclick="openAutoDialerPanel(event)"><i class="bi bi-headset"></i> <span data-i18n="nav.autodialer">Auto Dialer</span></a>
+            <hr class="my-2 mx-3">
+            <a href="#" class="nav-link-custom text-danger" onclick="markAllAsNew(event)"><i class="bi bi-flag-fill"></i> <span data-i18n="nav.markallnew">Mark All as New</span></a>
+            <a href="#" class="nav-link-custom text-danger" onclick="deleteAllRecords(event)"><i class="bi bi-trash-fill"></i> <span data-i18n="nav.deleteall">Delete All Records</span></a>
+        </div>
+        <div class="p-3 border-top"><div class="d-flex align-items-center justify-content-between"><div class="d-flex align-items-center gap-2"><div class="avatar-initials">JS</div><div class="lh-1"><div class="fw-bold small">John Sales</div><small class="text-muted" style="font-size:0.75rem;" data-i18n="role.admin">Admin</small></div></div><div class="d-flex gap-1"><button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="toggleDarkMode()"><i class="bi bi-moon-fill" id="themeIcon"></i></button><button class="btn btn-sm btn-outline-danger rounded-circle" onclick="logoutCrm()" data-i18n-title="title.logout" title="Log out"><i class="bi bi-box-arrow-right"></i></button></div></div></div>
+    </aside>
+
+    <main id="main-content">
+        <header id="topbar" class="px-4 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3"><button class="btn btn-outline-secondary d-lg-none" onclick="toggleSidebar()"><i class="bi bi-list fs-5"></i></button><div class="input-group" style="width:280px;"><span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span><input type="text" id="globalSearchInput" class="form-control border-start-0 ps-0" placeholder="Global search..." data-i18n-ph="top.search" onkeyup="handleGlobalSearch(event)"></div></div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="lang-switch">
+                    <i class="bi bi-translate"></i>
+                    <select class="form-select form-select-sm lang-select" onchange="setLang(this.value)" aria-label="Language / Sprache" title="Language / Sprache">
+                        <option value="en">English</option>
+                        <option value="de">Deutsch</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="openCustomerModal()"><i class="bi bi-plus-lg me-1"></i> <span data-i18n="top.add">Add Customer</span></button>
+            </div>
+        </header>
+
+        <div class="p-4 flex-grow-1" id="mainContainer">
+            <section id="view-dashboard" class="tab-view">
+                <div class="d-flex align-items-center justify-content-between mb-4"><div><h4 class="fw-bold mb-1" data-i18n="nav.dashboard">Dashboard</h4></div><button class="btn btn-sm btn-outline-primary" onclick="refreshDashboard()"><i class="bi bi-arrow-clockwise me-1"></i> <span data-i18n="dash.refresh">Refresh</span></button></div>
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-sm-6 col-xl-3"><div class="card metric-card p-3"><div class="d-flex justify-content-between"><div><small class="text-muted fw-semibold" data-i18n="dash.total">TOTAL</small><h3 class="fw-bold mb-0" id="dash-total-customers">0</h3></div><div class="icon-shape bg-primary-subtle text-primary"><i class="bi bi-people-fill"></i></div></div></div></div>
+                    <div class="col-12 col-sm-6 col-xl-3"><div class="card metric-card p-3"><div class="d-flex justify-content-between"><div><small class="text-muted fw-semibold" data-i18n="dash.new">NEW</small><h3 class="fw-bold mb-0" id="dash-total-leads">0</h3></div><div class="icon-shape bg-purple-subtle text-purple" style="background:rgba(111,66,193,0.1);color:#6f42c1;"><i class="bi bi-star-fill"></i></div></div></div></div>
+                    <div class="col-12 col-sm-6 col-xl-3"><div class="card metric-card p-3"><div class="d-flex justify-content-between"><div><small class="text-muted fw-semibold" data-i18n="dash.noanswer">NO ANSWER</small><h3 class="fw-bold mb-0" id="dash-no-answer">0</h3></div><div class="icon-shape bg-warning-subtle text-warning"><i class="bi bi-telephone-x-fill"></i></div></div></div></div>
+                    <div class="col-12 col-sm-6 col-xl-3"><div class="card metric-card p-3"><div class="d-flex justify-content-between"><div><small class="text-muted fw-semibold" data-i18n="dash.notint">NOT INTERESTED</small><h3 class="fw-bold mb-0" id="dash-not-interested">0</h3></div><div class="icon-shape bg-danger-subtle text-danger"><i class="bi bi-hand-thumbs-down-fill"></i></div></div></div></div>
+                </div>
+                <div class="row g-3 mb-4"><div class="col-12 col-lg-8"><div class="card border p-3"><h6 class="fw-bold" data-i18n="dash.statusdist">Status Distribution</h6><div style="height:300px;"><canvas id="statusChart"></canvas></div></div></div><div class="col-12 col-lg-4"><div class="card border p-3"><h6 class="fw-bold" data-i18n="dash.sources">Sources</h6><div style="height:300px;"><canvas id="sourceChart"></canvas></div></div></div></div>
+                <div class="card border"><div class="card-header fw-bold" data-i18n="dash.recent">Recent Activity</div><div class="table-responsive"><table class="table table-hover mb-0"><thead class="table-light"><tr><th data-i18n="th.customer">Customer</th><th data-i18n="lbl.company">Company</th><th data-i18n="lbl.status">Status</th><th data-i18n="lbl.phone">Phone</th><th data-i18n="lbl.followup">Follow-Up</th><th data-i18n="lbl.priority">Priority</th></tr></thead><tbody id="recentActivityTableBody"></tbody></table></div></div>
+            </section>
+
+            <section id="view-customers" class="tab-view d-none">
+                <div class="d-flex justify-content-between align-items-md-center gap-3 mb-4"><div><h4 class="fw-bold mb-1" data-i18n="cust.title">Customer Directory</h4></div><div class="d-flex gap-2"><button class="btn btn-outline-secondary btn-sm" onclick="exportData('xlsx')"><i class="bi bi-file-earmark-excel me-1"></i> <span data-i18n="cust.export">Export</span></button><button class="btn btn-primary btn-sm" onclick="openCustomerModal()"><i class="bi bi-plus-lg me-1"></i> <span data-i18n="btn.add">Add</span></button></div></div>
+                <div class="card border mb-3 p-3 bg-tertiary-bg"><div class="row g-2 align-items-end"><div class="col-12 col-md-3"><label class="form-label small fw-bold mb-1" data-i18n="f.search">Search</label><input type="text" id="filterSearch" class="form-control form-control-sm" oninput="applyFilters()"></div><div class="col-6 col-md-2"><label class="form-label small fw-bold mb-1" data-i18n="lbl.status">Status</label><select id="filterStatus" class="form-select form-select-sm" onchange="applyFilters()"><option value="" data-i18n="f.all">All</option><option value="New" data-i18n="st.New">New</option><option value="No Answer" data-i18n="st.No Answer">No Answer</option><option value="Not Interested" data-i18n="st.Not Interested">Not Interested</option><option value="Wrong Number" data-i18n="st.Wrong Number">Wrong Number</option><option value="Voicemail" data-i18n="st.Voicemail">Voicemail</option><option value="Call Back" data-i18n="st.Call Back">Call Back</option><option value="Customer" data-i18n="st.Customer">Customer</option></select></div><div class="col-6 col-md-2"><label class="form-label small fw-bold mb-1" data-i18n="lbl.priority">Priority</label><select id="filterPriority" class="form-select form-select-sm" onchange="applyFilters()"><option value="" data-i18n="f.all">All</option><option value="High" data-i18n="p.High">High</option><option value="Medium" data-i18n="p.Medium">Medium</option><option value="Low" data-i18n="p.Low">Low</option></select></div><div class="col-6 col-md-2"><label class="form-label small fw-bold mb-1" data-i18n="lbl.source">Source</label><select id="filterSource" class="form-select form-select-sm" onchange="applyFilters()"><option value="" data-i18n="f.all">All</option><option value="Website" data-i18n="src.Website">Website</option><option value="Referral" data-i18n="src.Referral">Referral</option><option value="Cold Call" data-i18n="src.Cold Call">Cold Call</option><option value="LinkedIn" data-i18n="src.LinkedIn">LinkedIn</option><option value="Trade Show" data-i18n="src.Trade Show">Trade Show</option></select></div><div class="col-6 col-md-3 d-flex gap-1 align-items-end"><div class="w-100"><label class="form-label small fw-bold mb-1" data-i18n="f.show">Show</label><select id="itemsPerPageSelect" class="form-select form-select-sm" onchange="changeItemsPerPage()"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></div><button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFilters()" data-i18n="f.clear">Clear</button></div></div></div>
+                <div class="bulk-action-bar mb-3 d-none" id="bulkActionBar"><span class="small fw-bold me-2" id="selectedCount">0</span><button class="btn btn-sm btn-outline-purple" style="border-color:#6f42c1;color:#6f42c1;" onclick="bulkChangeStatus('New')" data-i18n="st.New">New</button><button class="btn btn-sm btn-outline-warning" onclick="bulkChangeStatus('No Answer')" data-i18n="st.No Answer">No Answer</button><button class="btn btn-sm btn-outline-danger" onclick="bulkChangeStatus('Not Interested')" data-i18n="st.Not Interested">Not Interested</button><button class="btn btn-sm btn-outline-info" onclick="bulkChangeStatus('Voicemail')" data-i18n="st.Voicemail">Voicemail</button><button class="btn btn-sm btn-outline-success" onclick="bulkChangeStatus('Call Back')" data-i18n="st.Call Back">Call Back</button><button class="btn btn-sm btn-outline-danger" onclick="bulkDelete()" data-i18n="act.delete">Delete</button><button class="btn btn-sm btn-outline-primary" onclick="startAutoDialerFromSelection()" data-i18n="bulk.autodial">Auto Dial</button><button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()" data-i18n="f.clear">Clear</button></div>
+                <div class="card border"><div class="table-responsive"><table class="table table-hover mb-0" id="customerTable"><thead class="table-light"><tr><th><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)"></th><th data-i18n="th.custcompany">Customer / Company</th><th data-i18n="lbl.email">Email</th><th data-i18n="lbl.phone">Phone</th><th data-i18n="th.location">Location</th><th data-i18n="lbl.status">Status</th><th data-i18n="lbl.priority">Priority</th><th data-i18n="lbl.followup">Follow-Up</th><th data-i18n="det.comments">Comments</th><th class="text-end" data-i18n="th.actions">Actions</th></tr></thead><tbody id="customerTableBody"></tbody></table></div><div class="card-footer d-flex justify-content-between py-2"><small id="paginationInfo"></small><ul class="pagination pagination-sm mb-0" id="paginationControls"></ul></div></div>
+            </section>
+
+            <section id="view-import-export" class="tab-view d-none">
+                <h4 class="fw-bold mb-1" data-i18n="ie.title">Import & Export</h4>
+                <div class="row g-4"><div class="col-12 col-lg-7"><div class="card border p-4"><h6 class="fw-bold mb-3" data-i18n="ie.import">Import (.xlsx/.csv)</h6><p class="small text-muted mb-3"><span data-i18n="ie.order">Column order:</span> <strong data-i18n="ie.orderlist">ID, First Name, Last Name, Phone, Email, Country, Status, Comment, Created</strong></p><div class="drop-zone mb-3" id="dropZone" onclick="document.getElementById('fileInput').click()"><i class="bi bi-cloud-arrow-up text-primary fs-1 mb-2 d-block"></i><span class="fw-semibold" data-i18n="ie.drop">Drag & drop or click</span><input type="file" id="fileInput" class="d-none" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)"></div><div id="importProgressContainer" class="d-none mb-3"><div class="progress"><div class="progress-bar" id="importProgressBar" style="width:0%"></div></div></div></div></div><div class="col-12 col-lg-5"><div class="card border p-4"><h6 class="fw-bold mb-3" data-i18n="cust.export">Export</h6><div class="d-grid gap-2"><button class="btn btn-outline-success p-3" onclick="exportData('xlsx')">Excel</button><button class="btn btn-outline-secondary p-3" onclick="exportData('csv')">CSV</button><button class="btn btn-outline-danger p-3" onclick="exportData('pdf')">PDF</button></div></div></div></div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<div id="callingIndicator" class="calling-indicator hidden"><div class="spinner-border spinner-border-sm"></div><div><div style="font-size:0.75rem;opacity:0.9;" data-i18n="dlr.calling">Calling...</div><div id="callingName" style="font-weight:700;"></div><div id="callingPhone" style="font-size:0.85rem;"></div></div><button class="hangup-btn" onclick="endCall()" data-i18n-title="title.hangup" title="Hang up"><i class="bi bi-telephone-x-fill"></i></button></div>
+
+<div id="autoDialerPanel" class="auto-dialer-panel">
+    <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="fw-bold mb-0"><i class="bi bi-headset me-2"></i><span data-i18n="nav.autodialer">Auto Dialer</span></h6><button class="btn-close" onclick="closeAutoDialerPanel()"></button></div>
+    <div class="alert alert-info py-2 px-3 small mb-2"><i class="bi bi-info-circle me-1"></i> <span data-i18n="dlr.info">After each call, hang up in MicroSIP then click a status button or "Next Call".</span></div>
+    <div class="row g-2 mb-2"><div class="col-6"><label class="form-label small fw-bold mb-1" data-i18n="dlr.calls">Calls</label><input type="number" id="autoDialerCount" class="form-control form-control-sm" value="20" min="1" max="500"></div><div class="col-6"><label class="form-label small fw-bold mb-1" data-i18n="dlr.interval">Interval (sec)</label><input type="number" id="autoDialerInterval" class="form-control form-control-sm" value="30" min="5" max="300"></div></div>
+    <div class="mb-2"><label class="form-label small fw-bold mb-1" data-i18n="dlr.statusfilter">Status Filter</label><select id="autoDialerStatusFilter" class="form-select form-select-sm"><option value="New" selected data-i18n="dlr.f.new">New Only</option><option value="No Answer" data-i18n="st.No Answer">No Answer</option><option value="New,No Answer,Call Back" data-i18n="dlr.f.combo">New + No Answer + Call Back</option><option value="" data-i18n="dlr.f.all">All with phone</option></select></div>
+    <div id="autoDialerProgressContainer" class="d-none mb-2"><div class="d-flex justify-content-between small mb-1"><span id="autoDialerStatus">Ready</span><span id="autoDialerCounter">0/0</span></div><div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" id="autoDialerProgressBar" style="width:0%"></div></div></div>
+    <div id="currentCallInfo" class="d-none mb-2">
+        <div class="dialer-calling-box">
+            <div class="d-flex align-items-center gap-2">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                <div>
+                    <div style="font-size:0.7rem;opacity:0.9;" data-i18n="dlr.calling">Calling...</div>
+                    <div><strong id="currentCallName"></strong> - <span id="currentCallNumber"></span></div>
+                </div>
+            </div>
+            <button class="hangup-btn" onclick="endCall()" data-i18n-title="title.hangup" title="Hang up"><i class="bi bi-telephone-x-fill"></i></button>
+        </div>
+        <small class="text-muted d-block mt-1" data-i18n="dlr.hangupthen">Hang up in MicroSIP, then select status:</small>
+    </div>
+    <div id="dialerStatusButtons" class="d-none mb-2 d-flex gap-1 flex-wrap">
+        <button class="dialer-status-btn no-answer" onclick="dialerSetStatus('No Answer')"><i class="bi bi-telephone-x-fill me-1"></i><span data-i18n="st.No Answer">No Answer</span></button>
+        <button class="dialer-status-btn not-interested" onclick="dialerSetStatus('Not Interested')"><i class="bi bi-hand-thumbs-down-fill me-1"></i><span data-i18n="st.Not Interested">Not Interested</span></button>
+        <button class="dialer-status-btn voicemail" onclick="dialerSetStatus('Voicemail')"><i class="bi bi-voicemail me-1"></i><span data-i18n="st.Voicemail">Voicemail</span></button>
+        <button class="dialer-status-btn callback" onclick="dialerSetStatus('Call Back')"><i class="bi bi-arrow-counterclockwise me-1"></i><span data-i18n="st.Call Back">Call Back</span></button>
+    </div>
+    <div class="d-flex gap-2"><button class="auto-dialer-btn flex-grow-1" id="startAutoDialerBtn" onclick="startAutoDialer()"><i class="bi bi-play-fill me-1"></i> <span data-i18n="dlr.start">Start</span></button><button class="auto-dialer-btn stop flex-grow-1 d-none" id="stopAutoDialerBtn" onclick="stopAutoDialer()"><i class="bi bi-stop-fill me-1"></i> <span data-i18n="dlr.stop">Stop</span></button></div>
+    <button class="btn btn-success btn-sm w-100 mt-2 d-none" id="nextCallBtn" onclick="nextAutoDialerCall()"><i class="bi bi-skip-forward-fill me-1"></i> <span data-i18n="dlr.next">Next Call (Skip)</span></button>
+</div>
+
+<div class="modal fade" id="customerModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold" id="modalTitle">Customer</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="customerForm" class="row g-3" onsubmit="saveCustomer(event)"><input type="hidden" id="cust-id"><div class="col-12 col-md-6"><label class="form-label small fw-bold"><span data-i18n="lbl.name">Name</span> *</label><input type="text" id="cust-name" class="form-control" required></div><div class="col-12 col-md-6"><label class="form-label small fw-bold" data-i18n="lbl.company">Company</label><input type="text" id="cust-company" class="form-control"></div><div class="col-12 col-md-6"><label class="form-label small fw-bold"><span data-i18n="lbl.email">Email</span> *</label><input type="email" id="cust-email" class="form-control" required></div><div class="col-12 col-md-6"><label class="form-label small fw-bold" data-i18n="lbl.phone">Phone</label><div class="input-group"><input type="text" id="cust-phone" class="form-control" oninput="handlePhoneInput(this.value)"><span class="input-group-text small" id="detectedCountryBadge">Auto</span></div></div><div class="col-12 col-md-4"><label class="form-label small fw-bold" data-i18n="lbl.city">City</label><input type="text" id="cust-city" class="form-control"></div><div class="col-12 col-md-4"><label class="form-label small fw-bold" data-i18n="lbl.country">Country</label><input type="text" id="cust-country" class="form-control"></div><div class="col-12 col-md-4"><label class="form-label small fw-bold" data-i18n="lbl.address">Address</label><input type="text" id="cust-address" class="form-control"></div><div class="col-12 col-md-4"><label class="form-label small fw-bold" data-i18n="lbl.source">Source</label><select id="cust-source" class="form-select"><option value="Website" data-i18n="src.Website">Website</option><option value="Referral" data-i18n="src.Referral">Referral</option><option value="Cold Call" data-i18n="src.Cold Call">Cold Call</option><option value="LinkedIn" data-i18n="src.LinkedIn">LinkedIn</option><option value="Trade Show" data-i18n="src.Trade Show">Trade Show</option></select></div><div class="col-12 col-md-4"><label class="form-label small fw-bold" data-i18n="lbl.status">Status</label><select id="cust-status" class="form-select"><option value="New" selected data-i18n="st.New">New</option><option value="No Answer" data-i18n="st.No Answer">No Answer</option><option value="Not Interested" data-i18n="st.Not Interested">Not Interested</option><option value="Wrong Number" data-i18n="st.Wrong Number">Wrong Number</option><option value="Voicemail" data-i18n="st.Voicemail">Voicemail</option><option value="Call Back" data-i18n="st.Call Back">Call Back</option><option value="Contacted" data-i18n="st.Contacted">Contacted</option><option value="Proposal Sent" data-i18n="st.Proposal Sent">Proposal Sent</option><option value="Customer" data-i18n="st.Customer">Customer</option><option value="Inactive" data-i18n="st.Inactive">Inactive</option></select></div><div class="col-12 col-md-4"><label class="form-label small fw-bold" data-i18n="lbl.priority">Priority</label><select id="cust-priority" class="form-select"><option value="Low" data-i18n="p.Low">Low</option><option value="Medium" selected data-i18n="p.Medium">Medium</option><option value="High" data-i18n="p.High">High</option></select></div><div class="col-12 col-md-6"><label class="form-label small fw-bold" data-i18n="lbl.rep">Rep</label><input type="text" id="cust-rep" class="form-control" value="John Sales"></div><div class="col-12 col-md-6"><label class="form-label small fw-bold" data-i18n="lbl.followup">Follow-Up</label><input type="date" id="cust-followup" class="form-control"></div><div class="col-12"><label class="form-label small fw-bold" data-i18n="lbl.notes">Notes</label><textarea id="cust-notes" class="form-control" rows="3"></textarea></div><div class="modal-footer px-0 pb-0 pt-3"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn.cancel">Cancel</button><button type="submit" class="btn btn-primary" data-i18n="btn.save">Save</button></div></form></div></div></div></div>
+
+<div class="modal fade" id="detailsModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold" id="detail-name">Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn.close">Close</button></div></div></div></div>
+
+<div class="modal fade" id="excelMapperModal" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold" data-i18n="map.title">Map Columns</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p class="small text-muted"><span data-i18n="map.detected">Detected</span> <strong id="previewRowCount">0</strong> <span data-i18n="map.rows">rows.</span> <span data-i18n="map.expected">Expected order:</span> <span data-i18n="ie.orderlist">ID, First Name, Last Name, Phone, Email, Country, Status, Comment, Created</span>.</p><div class="table-responsive" style="max-height:400px;"><table class="table table-sm table-bordered" id="previewImportTable"><thead id="previewTableHeader"></thead><tbody id="previewTableBody"></tbody></table></div></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="btn.cancel">Cancel</button><button class="btn btn-success" onclick="confirmImport()" data-i18n="map.import">Import All</button></div></div></div></div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+const CRM_USER='Thomas';const CRM_PASS='0182';const SESSION_KEY='apexcrm_session';
+
+/* ================= INTERNATIONALISATION (EN / DE) ================= */
+const LANG_KEY='apexcrm_lang';
+let lang='en';
+try{const sl=localStorage.getItem(LANG_KEY);if(sl==='en'||sl==='de')lang=sl;}catch(e){}
+let appReady=false;
+
+const I18N={
+en:{
+'app.title':'Enterprise CRM Suite',
+'login.sub':'Please sign in to continue','login.user':'Username','login.pass':'Password','login.err':'Invalid username or password.','login.btn':'Sign In',
+'nav.main':'Main Menu','nav.dashboard':'Dashboard','nav.customers':'Customers','nav.importexport':'Import / Export','nav.quick':'Quick Filters','nav.archived':'Archived','nav.autodialer':'Auto Dialer','nav.markallnew':'Mark All as New','nav.deleteall':'Delete All Records',
+'role.admin':'Admin','title.logout':'Log out','title.hangup':'Hang up',
+'top.search':'Global search...','top.add':'Add Customer',
+'dash.refresh':'Refresh','dash.total':'TOTAL','dash.new':'NEW','dash.noanswer':'NO ANSWER','dash.notint':'NOT INTERESTED','dash.statusdist':'Status Distribution','dash.sources':'Sources','dash.recent':'Recent Activity','dash.noactivity':'No activity',
+'th.customer':'Customer','th.custcompany':'Customer / Company','th.location':'Location','th.actions':'Actions',
+'cust.title':'Customer Directory','cust.export':'Export',
+'f.search':'Search','f.show':'Show','f.clear':'Clear','f.all':'All',
+'lbl.name':'Name','lbl.company':'Company','lbl.email':'Email','lbl.phone':'Phone','lbl.city':'City','lbl.country':'Country','lbl.address':'Address','lbl.source':'Source','lbl.status':'Status','lbl.priority':'Priority','lbl.rep':'Rep','lbl.followup':'Follow-Up','lbl.notes':'Notes',
+'st.New':'New','st.No Answer':'No Answer','st.Not Interested':'Not Interested','st.Wrong Number':'Wrong Number','st.Voicemail':'Voicemail','st.Call Back':'Call Back','st.Contacted':'Contacted','st.Proposal Sent':'Proposal Sent','st.Customer':'Customer','st.Inactive':'Inactive',
+'p.High':'High','p.Medium':'Medium','p.Low':'Low',
+'src.Website':'Website','src.Referral':'Referral','src.Cold Call':'Cold Call','src.LinkedIn':'LinkedIn','src.Trade Show':'Trade Show',
+'bulk.selected':'{n} selected','bulk.autodial':'Auto Dial',
+'pg.showing':'Showing {a}-{b} of {n}','pg.prev':'Prev','pg.next':'Next','tbl.norecords':'No records.',
+'act.changestatus':'Change Status','act.view':'View','act.edit':'Edit','act.duplicate':'Duplicate','act.archive':'Archive','act.unarchive':'Unarchive','act.delete':'Delete',
+'ie.title':'Import & Export','ie.import':'Import (.xlsx/.csv)','ie.order':'Column order:','ie.orderlist':'ID, First Name, Last Name, Phone, Email, Country, Status, Comment, Created','ie.drop':'Drag & drop or click',
+'map.title':'Map Columns','map.detected':'Detected','map.rows':'rows.','map.expected':'Expected order:','map.import':'Import All',
+'btn.add':'Add','btn.cancel':'Cancel','btn.close':'Close','btn.save':'Save',
+'dlr.info':'After each call, hang up in MicroSIP then click a status button or "Next Call".','dlr.calls':'Calls','dlr.interval':'Interval (sec)','dlr.statusfilter':'Status Filter','dlr.f.new':'New Only','dlr.f.combo':'New + No Answer + Call Back','dlr.f.all':'All with phone',
+'dlr.calling':'Calling...','dlr.hangupthen':'Hang up in MicroSIP, then select status:','dlr.start':'Start','dlr.stop':'Stop','dlr.next':'Next Call (Skip)',
+'dlr.ready':'Ready','dlr.stopped':'Stopped','dlr.dialing':'Dialing #{i}: {name}','dlr.inprogress':'Call in progress: {name}','dlr.selectstatus':'Select status or click Next Call','dlr.comment':'Status set to "{s}" via dialer','dlr.author':'Auto Dialer',
+'modal.add':'Add Customer','modal.edit':'Edit Customer','auto':'Auto',
+'det.details':'Details','det.call':'Call','det.comments':'Comments','det.nocomments':'No comments.','det.addph':'Add a comment...','det.import':'Import',
+'t.nophone':'No phone number.','t.invalidnum':'Invalid number.','t.calling':'Calling {name}...','t.callended':'Call ended: {name}','t.noactivecall':'No active dialer call.','t.status':'Status: {s}',
+'t.dialerdone':'Auto dialer completed!','t.dialerstopped':'Auto dialer stopped.','t.nocontactsphone':'No contacts with phone.','t.dialerstart':'Auto dialer: {n} calls.','t.selectcontacts':'Select contacts.','t.novalidnumbers':'No valid numbers.','t.queued':'{n} queued. Click Start.',
+'t.noselection':'No selection.','t.nupdated':'{n} updated.','t.ndeleted':'{n} deleted.','t.namereq':'Name required.','t.emailreq':'Valid email required.','t.updated':'Updated.','t.added':'Added.','t.commentadded':'Comment added.','t.duplicated':'Duplicated.','t.archived':'Archived.','t.unarchived':'Unarchived.','t.deleted':'Deleted.','t.allnew':'All marked as New.','t.alldeleted':'All deleted.',
+'t.nodata':'No data.','t.error':'Error: {m}','t.readerr':'Read error.','t.norows':'No rows.','t.imported':'Imported {n}!','t.exported':'Exported {n}.',
+'c.change':'Change {n} to "{s}"?','c.bulkdelete':'DELETE {n}?','c.delete':'Delete?','c.markallnew':'Mark ALL as New?','c.deleteall':'DELETE ALL?','c.stopdialer':'Stop dialer?'
+},
+de:{
+'app.title':'Enterprise-CRM-Suite',
+'login.sub':'Bitte melden Sie sich an, um fortzufahren','login.user':'Benutzername','login.pass':'Passwort','login.err':'Benutzername oder Passwort ungültig.','login.btn':'Anmelden',
+'nav.main':'Hauptmenü','nav.dashboard':'Dashboard','nav.customers':'Kunden','nav.importexport':'Import / Export','nav.quick':'Schnellfilter','nav.archived':'Archiviert','nav.autodialer':'Auto-Dialer','nav.markallnew':'Alle als „Neu“ markieren','nav.deleteall':'Alle Datensätze löschen',
+'role.admin':'Administrator','title.logout':'Abmelden','title.hangup':'Auflegen',
+'top.search':'Globale Suche …','top.add':'Kunde hinzufügen',
+'dash.refresh':'Aktualisieren','dash.total':'GESAMT','dash.new':'NEU','dash.noanswer':'NICHT ERREICHT','dash.notint':'KEIN INTERESSE','dash.statusdist':'Statusverteilung','dash.sources':'Quellen','dash.recent':'Letzte Aktivitäten','dash.noactivity':'Keine Aktivitäten',
+'th.customer':'Kunde','th.custcompany':'Kunde / Firma','th.location':'Standort','th.actions':'Aktionen',
+'cust.title':'Kundenverzeichnis','cust.export':'Exportieren',
+'f.search':'Suche','f.show':'Anzeigen','f.clear':'Zurücksetzen','f.all':'Alle',
+'lbl.name':'Name','lbl.company':'Firma','lbl.email':'E-Mail','lbl.phone':'Telefon','lbl.city':'Stadt','lbl.country':'Land','lbl.address':'Adresse','lbl.source':'Quelle','lbl.status':'Status','lbl.priority':'Priorität','lbl.rep':'Vertriebsmitarbeiter','lbl.followup':'Wiedervorlage','lbl.notes':'Notizen',
+'st.New':'Neu','st.No Answer':'Nicht erreicht','st.Not Interested':'Kein Interesse','st.Wrong Number':'Falsche Nummer','st.Voicemail':'Mailbox','st.Call Back':'Rückruf','st.Contacted':'Kontaktiert','st.Proposal Sent':'Angebot gesendet','st.Customer':'Kunde','st.Inactive':'Inaktiv',
+'p.High':'Hoch','p.Medium':'Mittel','p.Low':'Niedrig',
+'src.Website':'Website','src.Referral':'Empfehlung','src.Cold Call':'Kaltakquise','src.LinkedIn':'LinkedIn','src.Trade Show':'Messe',
+'bulk.selected':'{n} ausgewählt','bulk.autodial':'Automatisch wählen',
+'pg.showing':'Zeige {a}–{b} von {n}','pg.prev':'Zurück','pg.next':'Weiter','tbl.norecords':'Keine Datensätze vorhanden.',
+'act.changestatus':'Status ändern','act.view':'Ansehen','act.edit':'Bearbeiten','act.duplicate':'Duplizieren','act.archive':'Archivieren','act.unarchive':'Wiederherstellen','act.delete':'Löschen',
+'ie.title':'Import & Export','ie.import':'Import (.xlsx/.csv)','ie.order':'Spaltenreihenfolge:','ie.orderlist':'ID, Vorname, Nachname, Telefon, E-Mail, Land, Status, Kommentar, Erstellt','ie.drop':'Datei hierher ziehen oder klicken',
+'map.title':'Spalten zuordnen','map.detected':'Erkannt:','map.rows':'Zeilen.','map.expected':'Erwartete Reihenfolge:','map.import':'Alle importieren',
+'btn.add':'Hinzufügen','btn.cancel':'Abbrechen','btn.close':'Schließen','btn.save':'Speichern',
+'dlr.info':'Legen Sie nach jedem Anruf in MicroSIP auf und klicken Sie anschließend auf eine Status-Schaltfläche oder auf „Nächster Anruf“.','dlr.calls':'Anrufe','dlr.interval':'Intervall (Sek.)','dlr.statusfilter':'Statusfilter','dlr.f.new':'Nur Neu','dlr.f.combo':'Neu + Nicht erreicht + Rückruf','dlr.f.all':'Alle mit Telefonnummer',
+'dlr.calling':'Anruf läuft …','dlr.hangupthen':'In MicroSIP auflegen und anschließend den Status wählen:','dlr.start':'Starten','dlr.stop':'Stoppen','dlr.next':'Nächster Anruf (Überspringen)',
+'dlr.ready':'Bereit','dlr.stopped':'Gestoppt','dlr.dialing':'Wähle #{i}: {name}','dlr.inprogress':'Anruf läuft: {name}','dlr.selectstatus':'Status wählen oder auf „Nächster Anruf“ klicken','dlr.comment':'Status per Dialer auf „{s}“ gesetzt','dlr.author':'Auto-Dialer',
+'modal.add':'Kunde hinzufügen','modal.edit':'Kunde bearbeiten','auto':'Auto',
+'det.details':'Details','det.call':'Anrufen','det.comments':'Kommentare','det.nocomments':'Keine Kommentare vorhanden.','det.addph':'Kommentar hinzufügen …','det.import':'Import',
+'t.nophone':'Keine Telefonnummer vorhanden.','t.invalidnum':'Ungültige Nummer.','t.calling':'Anruf an {name} …','t.callended':'Anruf beendet: {name}','t.noactivecall':'Kein aktiver Dialer-Anruf.','t.status':'Status: {s}',
+'t.dialerdone':'Auto-Dialer abgeschlossen!','t.dialerstopped':'Auto-Dialer gestoppt.','t.nocontactsphone':'Keine Kontakte mit Telefonnummer.','t.dialerstart':'Auto-Dialer: {n} Anrufe.','t.selectcontacts':'Bitte Kontakte auswählen.','t.novalidnumbers':'Keine gültigen Nummern.','t.queued':'{n} in der Warteschlange. Auf „Starten“ klicken.',
+'t.noselection':'Keine Auswahl.','t.nupdated':'{n} aktualisiert.','t.ndeleted':'{n} gelöscht.','t.namereq':'Name ist erforderlich.','t.emailreq':'Gültige E-Mail-Adresse erforderlich.','t.updated':'Aktualisiert.','t.added':'Hinzugefügt.','t.commentadded':'Kommentar hinzugefügt.','t.duplicated':'Dupliziert.','t.archived':'Archiviert.','t.unarchived':'Wiederhergestellt.','t.deleted':'Gelöscht.','t.allnew':'Alle als „Neu“ markiert.','t.alldeleted':'Alle Datensätze gelöscht.',
+'t.nodata':'Keine Daten vorhanden.','t.error':'Fehler: {m}','t.readerr':'Die Datei konnte nicht gelesen werden.','t.norows':'Keine Zeilen vorhanden.','t.imported':'{n} importiert!','t.exported':'{n} exportiert.',
+'c.change':'{n} Datensätze auf „{s}“ setzen?','c.bulkdelete':'{n} Datensätze LÖSCHEN?','c.delete':'Löschen?','c.markallnew':'ALLE Datensätze als „Neu“ markieren?','c.deleteall':'ALLE Datensätze LÖSCHEN?','c.stopdialer':'Dialer stoppen?'
+}};
+
+function t(k,v){
+  let s=(I18N[lang]&&I18N[lang][k]);
+  if(s===undefined)s=I18N.en[k];
+  if(s===undefined)s=k;
+  if(v)Object.keys(v).forEach(x=>{s=s.split('{'+x+'}').join(v[x]);});
+  return s;
+}
+function tStatus(s){return I18N.en['st.'+s]!==undefined?t('st.'+s):s;}
+function tPrio(p){return I18N.en['p.'+p]!==undefined?t('p.'+p):p;}
+function tSrc(s){return I18N.en['src.'+s]!==undefined?t('src.'+s):s;}
+const STATUSES=['New','No Answer','Not Interested','Wrong Number','Voicemail','Call Back','Contacted','Proposal Sent','Customer','Inactive'];
+const SOURCES=['Website','Referral','Cold Call','LinkedIn','Trade Show'];
+
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.title=t('app.title');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{el.title=t(el.getAttribute('data-i18n-title'));});
+  document.querySelectorAll('.lang-select').forEach(s=>{s.value=lang;});
+  const badge=document.getElementById('detectedCountryBadge');
+  if(badge&&!badge.classList.contains('bg-success-subtle'))badge.textContent=t('auto');
+  if(!adRunning){const st=document.getElementById('autoDialerStatus');if(st)st.textContent=t('dlr.ready');}
+  if(appReady){
+    if(statusChart)statusChart.destroy();
+    if(sourceChart)sourceChart.destroy();
+    initCharts();
+    refreshAll();
+    const dm=document.getElementById('detailsModal');
+    if(dm&&dm.classList.contains('show')&&viewingId)renderDetails();
+  }
+}
+window.setLang=function(l){
+  if(l!=='en'&&l!=='de')return;
+  lang=l;
+  try{localStorage.setItem(LANG_KEY,l);}catch(e){}
+  applyLang();
+};
+/* ================= END I18N ================= */
+
+window.handleLogin=function(e){e.preventDefault();const u=document.getElementById('login-user').value.trim();const p=document.getElementById('login-pass').value;const err=document.getElementById('loginError');if(u===CRM_USER&&p===CRM_PASS){sessionStorage.setItem(SESSION_KEY,'1');err.classList.add('d-none');showApp();}else{err.classList.remove('d-none');document.getElementById('login-pass').value='';}};
+function showApp(){document.getElementById('loginOverlay').style.display='none';document.getElementById('app-wrapper').style.display='flex';initApp();}
+window.logoutCrm=function(){sessionStorage.removeItem(SESSION_KEY);location.reload();};
+const dialMap=[{code:'+31',country:'Netherlands'},{code:'+33',country:'France'},{code:'+1',country:'USA'},{code:'+44',country:'UK'},{code:'+49',country:'Germany'},{code:'+91',country:'India'},{code:'+86',country:'China'},{code:'+81',country:'Japan'},{code:'+61',country:'Australia'},{code:'+55',country:'Brazil'},{code:'+52',country:'Mexico'},{code:'+39',country:'Italy'},{code:'+34',country:'Spain'},{code:'+7',country:'Russia'},{code:'+82',country:'South Korea'},{code:'+27',country:'South Africa'},{code:'+971',country:'UAE'},{code:'+65',country:'Singapore'},{code:'+41',country:'Switzerland'},{code:'+46',country:'Sweden'}];
+window.handlePhoneInput=function(v){if(!v)return;const b=document.getElementById('detectedCountryBadge');const s=[...dialMap].sort((a,b)=>b.code.length-a.code.length);const m=s.find(c=>v.trim().startsWith(c.code));if(m){document.getElementById('cust-country').value=m.country;if(b){b.innerText=m.country;b.className='input-group-text small bg-success-subtle text-success fw-bold';}}else{if(b){b.innerText=t('auto');b.className='input-group-text small text-muted';}}};
+const SK='apexcrm_v12';let customers=[],currentPage=1,itemsPerPage=20,tempImport=[],statusChart=null,sourceChart=null,viewingId=null,callTimer=null,currentCallCust=null;
+let adRunning=false,adQueue=[],adIdx=0,adTotal=0,adWaiting=false,adCurrentId=null;
+const seed=[{id:'c1',name:'Sarah Jenkins',company:'TechFlow',email:'sarah@tf.io',phone:'+31647271001',city:'Amsterdam',country:'Netherlands',address:'Damrak 1',source:'Website',status:'New',priority:'High',rep:'John Sales',followUp:'2026-08-10',notes:'',comments:[],archived:false,orderIndex:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},{id:'c2',name:'Michael Chang',company:'Apex',email:'mc@apex.com',phone:'+33647271001',city:'Paris',country:'France',address:'1 Rue',source:'LinkedIn',status:'New',priority:'Medium',rep:'John Sales',followUp:'2026-08-01',notes:'',comments:[],archived:false,orderIndex:2,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},{id:'c3',name:'Elena Rostova',company:'GD',email:'er@design.eu',phone:'+442079460912',city:'London',country:'UK',address:'12 Oxford',source:'Referral',status:'New',priority:'High',rep:'Sarah',followUp:'2026-07-31',notes:'',comments:[],archived:false,orderIndex:3,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}];
+function load(){const s=localStorage.getItem(SK);if(s){try{customers=JSON.parse(s);}catch(e){customers=[...seed];}}else{customers=[...seed];save();}ensureOrder();}
+function save(){localStorage.setItem(SK,JSON.stringify(customers));}
+function ensureOrder(){let m=customers.reduce((x,c)=>Math.max(x,c.orderIndex||0),0);customers.forEach(c=>{if(!c.orderIndex){m++;c.orderIndex=m;}});save();}
+function refreshAll(){refreshDash();renderTable();updateBulk();}
+window.refreshDashboard=function(){refreshDash();};
+function toast(msg,type='success'){const c=document.getElementById('toastContainer');const bg=type==='danger'?'bg-danger':'bg-success';c.insertAdjacentHTML('beforeend',`<div class="toast align-items-center text-white ${bg} border-0 show"><div class="d-flex"><div class="toast-body">${msg}</div><button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`);setTimeout(()=>{const els=c.querySelectorAll('.toast');if(els.length>3)els[0].remove();},3500);}
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'):'';}
+function statusClass(s){const map={New:'status-badge-new','No Answer':'status-badge-no-answer','Not Interested':'status-badge-not-interested','Wrong Number':'status-badge-wrong-number',Customer:'status-badge-customer',Contacted:'status-badge-contacted','Proposal Sent':'status-badge-proposal',Inactive:'status-badge-inactive',Voicemail:'status-badge-voicemail','Call Back':'status-badge-callback'};return map[s]||'bg-light text-dark';}
+function priorityClass(p){return p==='High'?'bg-danger':p==='Medium'?'bg-warning text-dark':'bg-info text-dark';}
+function fmtPhone(p){if(!p)return'-';const c=p.replace(/\s+/g,'');return c.startsWith('+')&&c.length>6?c.slice(0,3)+' '+c.slice(3,6)+' '+c.slice(6):p;}
+function rawPhone(p){return p?p.replace(/\s+/g,''):'';}
+
+function startCall(cid,ev,fromDialer){if(ev){ev.preventDefault();ev.stopPropagation();}fromDialer=!!fromDialer;const c=customers.find(i=>i.id===cid);if(!c||!c.phone){toast(t('t.nophone'),'danger');return false;}const rp=rawPhone(c.phone);if(!rp){toast(t('t.invalidnum'),'danger');return false;}currentCallCust=c;if(fromDialer){document.getElementById('callingIndicator').classList.add('hidden');}else{document.getElementById('callingIndicator').classList.remove('hidden');document.getElementById('callingName').innerText=c.name;document.getElementById('callingPhone').innerText=fmtPhone(c.phone);}if(callTimer)clearTimeout(callTimer);callTimer=setTimeout(()=>endCall(true),600000);const a=document.createElement('a');a.href='tel:'+rp;a.style.display='none';document.body.appendChild(a);a.click();document.body.removeChild(a);toast(t('t.calling',{name:esc(c.name)}),'primary');return false;}
+window.startCall=startCall;
+function triggerMicroSipHangup(){try{const a=document.createElement('a');a.href='sipctrl:hangup';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{if(a.parentNode)document.body.removeChild(a);},100);}catch(e){}}
+window.endCall=function(auto=false){triggerMicroSipHangup();document.getElementById('callingIndicator').classList.add('hidden');if(callTimer)clearTimeout(callTimer);callTimer=null;if(currentCallCust&&!auto){toast(t('t.callended',{name:esc(currentCallCust.name)}),'primary');}currentCallCust=null;if(adRunning&&adWaiting){document.getElementById('autoDialerStatus').innerText=t('dlr.selectstatus');document.getElementById('nextCallBtn').classList.remove('d-none');document.getElementById('dialerStatusButtons').classList.remove('d-none');}};
+
+window.dialerSetStatus=function(newStatus){if(!adRunning||!adWaiting||!adCurrentId){toast(t('t.noactivecall'),'danger');return;}const c=customers.find(i=>i.id===adCurrentId);if(c){c.status=newStatus;c.updatedAt=new Date().toISOString();const now=new Date();const ds=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');if(!c.comments)c.comments=[];c.comments.unshift({id:'c-'+Date.now(),author:t('dlr.author'),text:t('dlr.comment',{s:tStatus(newStatus)}),date:ds});save();refreshAll();toast(t('t.status',{s:tStatus(newStatus)}));}adWaiting=false;document.getElementById('nextCallBtn').classList.add('d-none');document.getElementById('dialerStatusButtons').classList.add('d-none');document.getElementById('currentCallInfo').classList.add('d-none');adIdx++;setTimeout(()=>processNextAdCall(),500);};
+
+window.nextAutoDialerCall=function(){if(!adRunning||!adWaiting)return;adWaiting=false;document.getElementById('nextCallBtn').classList.add('d-none');document.getElementById('dialerStatusButtons').classList.add('d-none');document.getElementById('currentCallInfo').classList.add('d-none');adIdx++;processNextAdCall();};
+
+function processNextAdCall(){if(!adRunning)return;if(adIdx>=adTotal){stopAutoDialer();toast(t('t.dialerdone'),'success');return;}const c=adQueue[adIdx];adCurrentId=c.id;document.getElementById('autoDialerProgressContainer').classList.remove('d-none');document.getElementById('autoDialerStatus').innerText=t('dlr.dialing',{i:adIdx+1,name:c.name});document.getElementById('autoDialerCounter').innerText=`${adIdx+1}/${adTotal}`;document.getElementById('autoDialerProgressBar').style.width=`${((adIdx+1)/adTotal)*100}%`;document.getElementById('currentCallInfo').classList.remove('d-none');document.getElementById('currentCallName').innerText=c.name;document.getElementById('currentCallNumber').innerText=fmtPhone(c.phone);document.getElementById('nextCallBtn').classList.add('d-none');document.getElementById('dialerStatusButtons').classList.add('d-none');startCall(c.id,null,true);adWaiting=true;document.getElementById('autoDialerStatus').innerText=t('dlr.inprogress',{name:c.name});}
+window.stopAutoDialer=function(){adRunning=false;adWaiting=false;if(callTimer)clearTimeout(callTimer);document.getElementById('callingIndicator').classList.add('hidden');document.getElementById('currentCallInfo').classList.add('d-none');document.getElementById('nextCallBtn').classList.add('d-none');document.getElementById('dialerStatusButtons').classList.add('d-none');document.getElementById('autoDialerStatus').innerText=t('dlr.stopped');updateAdButtons(false);toast(t('t.dialerstopped'),'danger');};
+function updateAdButtons(run){document.getElementById('startAutoDialerBtn').classList.toggle('d-none',run);document.getElementById('stopAutoDialerBtn').classList.toggle('d-none',!run);document.getElementById('autoDialerCount').disabled=run;document.getElementById('autoDialerInterval').disabled=run;document.getElementById('autoDialerStatusFilter').disabled=run;if(!run){document.getElementById('nextCallBtn').classList.add('d-none');document.getElementById('dialerStatusButtons').classList.add('d-none');}}
+window.startAutoDialer=function(){if(adRunning)return;const cnt=parseInt(document.getElementById('autoDialerCount').value)||20;const sf=document.getElementById('autoDialerStatusFilter').value;let pool=[];const sts=sf?sf.split(','):[];pool=customers.filter(c=>c.phone&&!c.archived&&(sts.length===0||sts.includes(c.status))).sort((a,b)=>(b.orderIndex||0)-(a.orderIndex||0));if(!pool.length){toast(t('t.nocontactsphone'),'danger');return;}adQueue=pool.slice(0,Math.min(cnt,pool.length));adIdx=0;adTotal=adQueue.length;adRunning=true;adWaiting=false;adCurrentId=null;document.getElementById('autoDialerProgressContainer').classList.remove('d-none');document.getElementById('autoDialerCounter').innerText=`0/${adTotal}`;document.getElementById('autoDialerProgressBar').style.width='0%';updateAdButtons(true);toast(t('t.dialerstart',{n:adTotal}));processNextAdCall();};
+window.openAutoDialerPanel=function(e){if(e)e.preventDefault();document.getElementById('autoDialerPanel').classList.add('show');};
+window.closeAutoDialerPanel=function(){if(adRunning){if(!confirm(t('c.stopdialer')))return;stopAutoDialer();}document.getElementById('autoDialerPanel').classList.remove('show');};
+window.startAutoDialerFromSelection=function(){const ids=getSelectedIds();if(!ids.length){toast(t('t.selectcontacts'),'danger');return;}const sel=customers.filter(c=>ids.includes(c.id)&&c.phone&&!c.archived);if(!sel.length){toast(t('t.novalidnumbers'),'danger');return;}adQueue=[...sel];adIdx=0;adTotal=sel.length;document.getElementById('autoDialerCount').value=sel.length;document.getElementById('autoDialerStatusFilter').value='';document.getElementById('autoDialerPanel').classList.add('show');adRunning=false;adWaiting=false;document.getElementById('autoDialerProgressContainer').classList.add('d-none');updateAdButtons(false);toast(t('t.queued',{n:sel.length}));};
+
+function refreshDash(){const act=customers.filter(c=>!c.archived);document.getElementById('dash-total-customers').innerText=act.length;document.getElementById('dash-total-leads').innerText=act.filter(c=>c.status==='New').length;document.getElementById('dash-no-answer').innerText=act.filter(c=>c.status==='No Answer').length;document.getElementById('dash-not-interested').innerText=act.filter(c=>c.status==='Not Interested').length;updateCharts(act);renderRecent(act);}
+function initCharts(){const dark=document.documentElement.getAttribute('data-bs-theme')==='dark';const tc=dark?'#adbac7':'#212529';statusChart=new Chart(document.getElementById('statusChart').getContext('2d'),{type:'bar',data:{labels:STATUSES.map(tStatus),datasets:[{label:'Count',data:Array(STATUSES.length).fill(0),backgroundColor:['#6f42c1','#fd7e14','#dc3545','#6c757d','#0dcaf0','#20c997','#0d6efd','#ffc107','#198754','#adb5bd']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:tc}},y:{ticks:{color:tc},beginAtZero:true}}}});sourceChart=new Chart(document.getElementById('sourceChart').getContext('2d'),{type:'doughnut',data:{labels:SOURCES.map(tSrc),datasets:[{data:[0,0,0,0,0],backgroundColor:['#0d6efd','#20c997','#ffc107','#0dcaf0','#6f42c1']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:tc}}}}});}
+function updateCharts(rec){if(!statusChart||!sourceChart)return;statusChart.data.datasets[0].data=STATUSES.map(s=>rec.filter(r=>r.status===s).length);statusChart.update();sourceChart.data.datasets[0].data=SOURCES.map(s=>rec.filter(r=>r.source===s).length);sourceChart.update();}
+function renderRecent(rec){const tb=document.getElementById('recentActivityTableBody');tb.innerHTML='';const srt=[...rec].sort((a,b)=>b.orderIndex-a.orderIndex).slice(0,5);if(!srt.length){tb.innerHTML=`<tr><td colspan="6" class="text-center py-3 text-muted">${t('dash.noactivity')}</td></tr>`;return;}srt.forEach(c=>{const tr=document.createElement('tr');tr.innerHTML=`<td class="fw-semibold">${esc(c.name)}</td><td>${esc(c.company||'-')}</td><td><span class="badge ${statusClass(c.status)}">${esc(tStatus(c.status))}</span></td><td><div class="d-flex align-items-center gap-1"><small>${esc(fmtPhone(c.phone))}</small>${c.phone?`<a href="javascript:void(0)" class="call-btn btn-sm" onclick="startCall('${c.id}',event)"><i class="bi bi-telephone-fill"></i></a>`:''}</div></td><td>${c.followUp||'-'}</td><td><span class="badge ${priorityClass(c.priority)}">${esc(tPrio(c.priority))}</span></td>`;tb.appendChild(tr);});}
+function getFiltered(){const s=document.getElementById('filterSearch').value.toLowerCase();const st=document.getElementById('filterStatus').value;const pr=document.getElementById('filterPriority').value;const so=document.getElementById('filterSource').value;return customers.filter(c=>(c.name.toLowerCase().includes(s)||(c.company&&c.company.toLowerCase().includes(s))||c.email.toLowerCase().includes(s)||(c.phone&&c.phone.includes(s)))&&(!st||c.status===st)&&(!pr||c.priority===pr)&&(!so||c.source===so)).sort((a,b)=>(b.orderIndex||0)-(a.orderIndex||0));}
+function getSelectedIds(){return Array.from(document.querySelectorAll('#customerTableBody .row-checkbox:checked')).map(cb=>cb.value);}
+function updateBulk(){const bar=document.getElementById('bulkActionBar');const ids=getSelectedIds();if(ids.length){bar.classList.remove('d-none');document.getElementById('selectedCount').innerText=t('bulk.selected',{n:ids.length});}else{bar.classList.add('d-none');}}
+window.updateBulk=updateBulk;
+window.clearSelection=function(){document.querySelectorAll('#customerTableBody .row-checkbox:checked').forEach(cb=>cb.checked=false);document.getElementById('selectAllCheckbox').checked=false;updateBulk();};
+window.bulkChangeStatus=function(s){const ids=getSelectedIds();if(!ids.length)return toast(t('t.noselection'),'danger');if(!confirm(t('c.change',{n:ids.length,s:tStatus(s)})))return;customers.forEach(c=>{if(ids.includes(c.id))c.status=s;});save();refreshAll();toast(t('t.nupdated',{n:ids.length}));};
+window.bulkDelete=function(){const ids=getSelectedIds();if(!ids.length)return toast(t('t.noselection'),'danger');if(!confirm(t('c.bulkdelete',{n:ids.length})))return;customers=customers.filter(c=>!ids.includes(c.id));save();refreshAll();toast(t('t.ndeleted',{n:ids.length}),'danger');};
+function renderTable(){const filt=getFiltered();const tb=document.getElementById('customerTableBody');tb.innerHTML='';const total=filt.length;const pages=Math.ceil(total/itemsPerPage)||1;if(currentPage>pages)currentPage=pages;const start=(currentPage-1)*itemsPerPage;const pag=filt.slice(start,start+itemsPerPage);if(!pag.length){tb.innerHTML=`<tr><td colspan="10" class="text-center py-4 text-muted">${t('tbl.norecords')}</td></tr>`;}else{pag.forEach(c=>{const tr=document.createElement('tr');if(c.archived)tr.classList.add('table-secondary');tr.innerHTML=`<td><input type="checkbox" class="row-checkbox" value="${c.id}" onchange="updateBulk()"></td><td><div class="fw-bold">${esc(c.name)}</div><small>${esc(c.company||'')}</small></td><td><small>${esc(c.email)}</small></td><td><div class="d-flex align-items-center gap-1"><small>${esc(fmtPhone(c.phone))}</small>${c.phone?`<a href="javascript:void(0)" class="call-btn btn-sm" onclick="startCall('${c.id}',event)"><i class="bi bi-telephone-fill"></i></a>`:''}</div></td><td><small>${esc(c.city||'')}, ${esc(c.country||'')}</small></td><td><span class="badge ${statusClass(c.status)}">${esc(tStatus(c.status))}</span></td><td><span class="badge ${priorityClass(c.priority)}">${esc(tPrio(c.priority))}</span></td><td><small>${c.followUp||'-'}</small></td><td><span class="badge bg-secondary">${(c.comments&&c.comments.length)||0}</span></td><td class="text-end"><div class="d-flex gap-1 justify-content-end"><a href="https://aiphone.coperato.net/index.php" target="_blank" class="aiphone-btn btn-sm"><i class="bi bi-robot"></i></a><div class="dropdown"><button class="btn btn-sm btn-light border" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button><ul class="dropdown-menu dropdown-menu-end"><li><span class="dropdown-header small">${t('act.changestatus')}</span></li><li><a class="dropdown-item" href="#" onclick="quickStatus('${c.id}','New',event)">${tStatus('New')}</a></li><li><a class="dropdown-item" href="#" onclick="quickStatus('${c.id}','No Answer',event)">${tStatus('No Answer')}</a></li><li><a class="dropdown-item" href="#" onclick="quickStatus('${c.id}','Not Interested',event)">${tStatus('Not Interested')}</a></li><li><a class="dropdown-item" href="#" onclick="quickStatus('${c.id}','Wrong Number',event)">${tStatus('Wrong Number')}</a></li><li><a class="dropdown-item" href="#" onclick="quickStatus('${c.id}','Voicemail',event)">${tStatus('Voicemail')}</a></li><li><a class="dropdown-item" href="#" onclick="quickStatus('${c.id}','Call Back',event)">${tStatus('Call Back')}</a></li><li><hr class="dropdown-divider"></li><li><a class="dropdown-item" href="#" onclick="viewCust('${c.id}',event)">${t('act.view')}</a></li><li><a class="dropdown-item" href="#" onclick="openCustModal('${c.id}',event)">${t('act.edit')}</a></li><li><a class="dropdown-item" href="#" onclick="dupCust('${c.id}',event)">${t('act.duplicate')}</a></li><li><a class="dropdown-item" href="#" onclick="toggleArch('${c.id}',event)">${c.archived?t('act.unarchive'):t('act.archive')}</a></li><li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="#" onclick="delCust('${c.id}',event)">${t('act.delete')}</a></li></ul></div></div></td>`;tb.appendChild(tr);});}renderPagination(total,pages);updateBulk();}
+function renderPagination(total,pages){document.getElementById('paginationInfo').innerText=t('pg.showing',{a:Math.min(total,(currentPage-1)*itemsPerPage+1),b:Math.min(total,currentPage*itemsPerPage),n:total});const c=document.getElementById('paginationControls');c.innerHTML='';c.innerHTML+=`<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="chPage(${currentPage-1},event)">${t('pg.prev')}</a></li>`;for(let i=1;i<=pages;i++)c.innerHTML+=`<li class="page-item ${currentPage===i?'active':''}"><a class="page-link" href="#" onclick="chPage(${i},event)">${i}</a></li>`;c.innerHTML+=`<li class="page-item ${currentPage===pages?'disabled':''}"><a class="page-link" href="#" onclick="chPage(${currentPage+1},event)">${t('pg.next')}</a></li>`;}
+window.chPage=function(p,e){if(e)e.preventDefault();currentPage=p;renderTable();};
+window.applyFilters=function(){currentPage=1;renderTable();};
+window.resetFilters=function(){document.getElementById('filterSearch').value='';document.getElementById('filterStatus').value='';document.getElementById('filterPriority').value='';document.getElementById('filterSource').value='';applyFilters();};
+window.changeItemsPerPage=function(){itemsPerPage=parseInt(document.getElementById('itemsPerPageSelect').value);currentPage=1;renderTable();};
+window.quickStatus=function(id,s,e){if(e)e.preventDefault();const c=customers.find(i=>i.id===id);if(!c)return;c.status=s;c.updatedAt=new Date().toISOString();save();refreshAll();toast(t('t.status',{s:tStatus(s)}));};
+window.openCustModal=function(id,e){if(e)e.preventDefault();const m=new bootstrap.Modal(document.getElementById('customerModal'));document.getElementById('customerForm').reset();document.getElementById('detectedCountryBadge').innerText=t('auto');document.getElementById('detectedCountryBadge').className='input-group-text small text-muted';if(id){document.getElementById('modalTitle').innerText=t('modal.edit');const c=customers.find(i=>i.id===id);if(c){document.getElementById('cust-id').value=c.id;document.getElementById('cust-name').value=c.name||'';document.getElementById('cust-company').value=c.company||'';document.getElementById('cust-email').value=c.email||'';document.getElementById('cust-phone').value=c.phone||'';document.getElementById('cust-city').value=c.city||'';document.getElementById('cust-country').value=c.country||'';document.getElementById('cust-address').value=c.address||'';document.getElementById('cust-source').value=c.source||'Website';document.getElementById('cust-status').value=c.status||'New';document.getElementById('cust-priority').value=c.priority||'Medium';document.getElementById('cust-rep').value=c.rep||'';document.getElementById('cust-followup').value=c.followUp||'';document.getElementById('cust-notes').value=c.notes||'';if(c.phone)handlePhoneInput(c.phone);}}else{document.getElementById('modalTitle').innerText=t('modal.add');document.getElementById('cust-id').value='';document.getElementById('cust-status').value='New';}m.show();};
+window.openCustomerModal=window.openCustModal;
+window.saveCustomer=function(e){e.preventDefault();const id=document.getElementById('cust-id').value;const name=document.getElementById('cust-name').value.trim();const email=document.getElementById('cust-email').value.trim();if(!name){toast(t('t.namereq'),'danger');return;}if(!email||!email.includes('@')){toast(t('t.emailreq'),'danger');return;}const now=new Date().toISOString();const p={id:id||'cust-'+Date.now(),name,company:document.getElementById('cust-company').value.trim(),email,phone:document.getElementById('cust-phone').value.trim(),city:document.getElementById('cust-city').value.trim(),country:document.getElementById('cust-country').value.trim(),address:document.getElementById('cust-address').value.trim(),source:document.getElementById('cust-source').value,status:document.getElementById('cust-status').value,priority:document.getElementById('cust-priority').value,rep:document.getElementById('cust-rep').value.trim(),followUp:document.getElementById('cust-followup').value,notes:document.getElementById('cust-notes').value.trim(),comments:id?(customers.find(c=>c.id===id)?.comments||[]):[],archived:false,updatedAt:now};if(id){const idx=customers.findIndex(c=>c.id===id);if(idx!==-1){p.orderIndex=customers[idx].orderIndex||(customers.reduce((m,c)=>Math.max(m,c.orderIndex||0),0)+1);p.createdAt=customers[idx].createdAt;if(customers[idx].externalId)p.externalId=customers[idx].externalId;customers[idx]=p;}toast(t('t.updated'));}else{p.orderIndex=customers.reduce((m,c)=>Math.max(m,c.orderIndex||0),0)+1;p.createdAt=now;customers.unshift(p);toast(t('t.added'));}save();bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();refreshAll();};
+window.viewCust=function(id,e){if(e)e.preventDefault();viewingId=id;renderDetails();new bootstrap.Modal(document.getElementById('detailsModal')).show();};
+function renderDetails(){const c=customers.find(i=>i.id===viewingId);if(!c)return;document.getElementById('detail-name').innerText=c.name+' - '+t('det.details');const cmts=(c.comments&&c.comments.length)?c.comments.map(cm=>`<div class="comment-item"><div class="d-flex justify-content-between"><strong class="small text-primary">${esc(cm.author)}</strong><small class="text-muted">${cm.date}</small></div><div class="small">${esc(cm.text)}</div></div>`).join(''):`<p class="text-muted small">${t('det.nocomments')}</p>`;document.getElementById('detailModalBody').innerHTML=`<div class="row g-3 mb-3"><div class="col-6"><strong>${t('lbl.company')}:</strong> ${esc(c.company||'-')}</div><div class="col-6"><strong>${t('lbl.status')}:</strong> <span class="badge ${statusClass(c.status)}">${esc(tStatus(c.status))}</span></div><div class="col-6"><strong>${t('lbl.email')}:</strong> ${esc(c.email)}</div><div class="col-6"><strong>${t('lbl.phone')}:</strong> ${esc(c.phone||'-')} ${c.phone?`<a href="javascript:void(0)" class="call-btn btn-sm ms-1" onclick="startCall('${c.id}',event)"><i class="bi bi-telephone-fill"></i> ${t('det.call')}</a>`:''}</div></div><hr><h6>${t('det.comments')}</h6><div style="max-height:200px;overflow-y:auto;">${cmts}</div><div class="input-group mt-2"><input id="newCommentInput" class="form-control form-control-sm" placeholder="${t('det.addph')}" onkeypress="if(event.key==='Enter')addComment()"><button class="btn btn-primary btn-sm" onclick="addComment()">${t('btn.add')}</button></div>`;}
+window.addComment=function(){const inp=document.getElementById('newCommentInput');if(!inp||!inp.value.trim()||!viewingId)return;const c=customers.find(i=>i.id===viewingId);if(!c)return;if(!c.comments)c.comments=[];const n=new Date();c.comments.unshift({id:'c-'+Date.now(),author:c.rep||'Rep',text:inp.value.trim(),date:n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0')+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')});c.updatedAt=new Date().toISOString();save();renderDetails();toast(t('t.commentadded'));};
+window.dupCust=function(id,e){if(e)e.preventDefault();const c=customers.find(i=>i.id===id);if(!c)return;const mx=customers.reduce((m,c)=>Math.max(m,c.orderIndex||0),0)+1;customers.unshift({...c,id:'cust-'+Date.now(),name:c.name+' (Copy)',orderIndex:mx,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});save();refreshAll();toast(t('t.duplicated'));};
+window.toggleArch=function(id,e){if(e)e.preventDefault();const c=customers.find(i=>i.id===id);if(!c)return;c.archived=!c.archived;save();refreshAll();toast(c.archived?t('t.archived'):t('t.unarchived'));};
+window.delCust=function(id,e){if(e)e.preventDefault();if(!confirm(t('c.delete')))return;customers=customers.filter(c=>c.id!==id);save();refreshAll();toast(t('t.deleted'),'danger');};
+window.markAllAsNew=function(e){if(e)e.preventDefault();if(!customers.length)return;if(!confirm(t('c.markallnew')))return;customers.forEach(c=>c.status='New');save();refreshAll();toast(t('t.allnew'));};
+window.deleteAllRecords=function(e){if(e)e.preventDefault();if(!customers.length)return;if(!confirm(t('c.deleteall')))return;customers=[];save();refreshAll();toast(t('t.alldeleted'),'danger');};
+window.toggleSelectAll=function(m){document.querySelectorAll('#customerTableBody .row-checkbox').forEach(cb=>cb.checked=m.checked);updateBulk();};
+window.filterByStatus=function(s,e){switchTab('customers',e);document.getElementById('filterStatus').value=s;applyFilters();};
+window.filterByArchive=function(a,e){switchTab('customers',e);applyFilters();};
+window.handleGlobalSearch=function(e){switchTab('customers');document.getElementById('filterSearch').value=e.target.value;applyFilters();};
+window.toggleDarkMode=function(){const h=document.documentElement;const n=h.getAttribute('data-bs-theme')==='dark'?'light':'dark';h.setAttribute('data-bs-theme',n);document.getElementById('themeIcon').className=n==='dark'?'bi bi-sun-fill':'bi bi-moon-fill';if(statusChart)statusChart.destroy();if(sourceChart)sourceChart.destroy();initCharts();refreshDash();};
+window.toggleSidebar=function(){document.getElementById('sidebar').classList.toggle('show');};
+window.switchTab=function(t_,e){if(e)e.preventDefault();document.querySelectorAll('.tab-view').forEach(el=>el.classList.add('d-none'));document.querySelectorAll('.nav-link-custom').forEach(el=>el.classList.remove('active'));const tg=document.getElementById(`view-${t_}`);if(tg)tg.classList.remove('d-none');if(e&&e.currentTarget)e.currentTarget.classList.add('active');if(t_==='dashboard')refreshDash();if(t_==='customers')renderTable();document.getElementById('sidebar').classList.remove('show');};
+function setupDrag(){const z=document.getElementById('dropZone');if(!z)return;['dragenter','dragover'].forEach(ev=>z.addEventListener(ev,e=>{e.preventDefault();z.classList.add('dragover');}));['dragleave','drop'].forEach(ev=>z.addEventListener(ev,e=>{e.preventDefault();z.classList.remove('dragover');}));z.addEventListener('drop',e=>{const f=e.dataTransfer.files;if(f.length)processFile(f[0]);});}
+window.handleFileSelect=function(e){if(e.target.files[0])processFile(e.target.files[0]);e.target.value='';};
+function processFile(file){const r=new FileReader();const p=document.getElementById('importProgressContainer');const b=document.getElementById('importProgressBar');if(p)p.classList.remove('d-none');if(b)b.style.width='30%';r.onload=function(e){if(b)b.style.width='70%';try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});const json=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});if(b)b.style.width='100%';setTimeout(()=>{if(p)p.classList.add('d-none');if(b)b.style.width='0%';},500);if(json.length<2){toast(t('t.nodata'),'danger');return;}setupPreview(json);}catch(err){toast(t('t.error',{m:esc(err.message)}),'danger');if(p)p.classList.add('d-none');}};r.onerror=()=>{toast(t('t.readerr'),'danger');if(p)p.classList.add('d-none');};r.readAsArrayBuffer(file);}
+
+/* ===== IMPORT: column order =====
+   0 ID | 1 First Name | 2 Last Name | 3 Phone | 4 Email | 5 Country | 6 Status | 7 Comment | 8 Created */
+function setupPreview(raw){
+  const headers=raw[0].map(h=>String(h||'').trim());
+  const rows=raw.slice(1).filter(row=>row.some(cell=>cell!==null&&cell!==undefined&&String(cell).trim()!==''));
+  if(!rows.length){toast(t('t.norows'),'danger');return;}
+  document.getElementById('previewRowCount').innerText=rows.length;
+  const prev=rows.slice(0,10);
+  const th=document.getElementById('previewTableHeader');
+  const tb=document.getElementById('previewTableBody');
+  th.innerHTML='';tb.innerHTML='';
+  let trH=document.createElement('tr');
+  headers.forEach(h=>trH.innerHTML+=`<th>${esc(h)}</th>`);
+  th.appendChild(trH);
+  prev.forEach(r=>{
+    let tr=document.createElement('tr');
+    headers.forEach((h,i)=>{
+      const v=r[i];
+      tr.innerHTML+=`<td>${esc(v instanceof Date?v.toISOString().slice(0,16).replace('T',' '):String(v??''))}</td>`;
+    });
+    tb.appendChild(tr);
+  });
+  if(rows.length>10)tb.innerHTML+=`<tr><td colspan="${headers.length||1}" class="text-center text-muted">... +${rows.length-10}</td></tr>`;
+
+  const mx=customers.reduce((m,c)=>Math.max(m,c.orderIndex||0),0);
+  const col=(row,i)=>String(row[i]??'').trim();
+  const parseDate=v=>{
+    if(v===''||v==null)return null;
+    if(v instanceof Date)return isNaN(v)?null:v;
+    if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400*1000));return isNaN(d)?null:d;} // Excel serial date
+    const d=new Date(String(v).trim());return isNaN(d)?null:d;
+  };
+  const fmtDT=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  /* Accept status in English or German */
+  const statusLookup={};
+  STATUSES.forEach(s=>{statusLookup[s.toLowerCase()]=s;statusLookup[I18N.de['st.'+s].toLowerCase()]=s;});
+
+  tempImport=rows.map((row,idx)=>{
+    const first=col(row,1), last=col(row,2);
+    const ph=col(row,3);
+    let cn=col(row,5);
+    if(!cn&&ph){
+      const srt=[...dialMap].sort((a,b)=>b.code.length-a.code.length);
+      const m=srt.find(c=>ph.startsWith(c.code));
+      if(m)cn=m.country;
+    }
+    const status=statusLookup[col(row,6).toLowerCase()]||'New';
+    const commentText=col(row,7);
+    const createdDate=parseDate(row[8]);
+    const createdISO=(createdDate||new Date()).toISOString();
+    const comments=commentText?[{id:'c-'+Date.now()+'-'+idx,author:t('det.import'),text:commentText,date:createdDate?fmtDT(createdDate):''}]:[];
+
+    return{
+      id:'cust-'+Date.now()+'-'+Math.random().toString(36).substr(2,6),
+      externalId:col(row,0),
+      name:(first+' '+last).trim()||'Imported',
+      company:'',
+      email:col(row,4)||'no@email.com',
+      phone:ph,
+      city:'',
+      country:cn,
+      address:'',
+      source:'Website',
+      status:status,
+      priority:'Medium',
+      rep:'John Sales',
+      followUp:'',
+      notes:'',
+      comments:comments,
+      archived:false,
+      orderIndex:mx+idx+1,
+      createdAt:createdISO,
+      updatedAt:new Date().toISOString()
+    };
+  });
+  new bootstrap.Modal(document.getElementById('excelMapperModal')).show();
+}
+
+window.confirmImport=function(){if(!tempImport||!tempImport.length){toast(t('t.nodata'),'danger');return;}customers=[...tempImport,...customers];save();refreshAll();bootstrap.Modal.getInstance(document.getElementById('excelMapperModal')).hide();toast(t('t.imported',{n:tempImport.length}));tempImport=[];switchTab('customers');};
+window.exportData=function(f){const act=customers.filter(c=>!c.archived);if(!act.length){toast(t('t.nodata'),'danger');return;}if(f==='xlsx'||f==='csv'){const data=act.map(c=>({Name:c.name,Company:c.company,Email:c.email,Phone:c.phone,City:c.city,Country:c.country,Status:c.status,Priority:c.priority,Source:c.source,Rep:c.rep,FollowUp:c.followUp,Notes:c.notes}));const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Customers');XLSX.writeFile(wb,`CRM_Export_${new Date().toISOString().slice(0,10)}.${f==='csv'?'csv':'xlsx'}`,f==='csv'?{bookType:'csv'}:{});toast(t('t.exported',{n:act.length}));}else window.print();};
+function initApp(){load();appReady=true;initCharts();refreshAll();setupDrag();applyLang();document.getElementById('selectAllCheckbox').addEventListener('change',function(){document.querySelectorAll('#customerTableBody .row-checkbox').forEach(cb=>cb.checked=this.checked);updateBulk();});}
+document.addEventListener('DOMContentLoaded',()=>{applyLang();if(sessionStorage.getItem(SESSION_KEY)==='1'){showApp();}else{document.getElementById('login-user').focus();}});
+})();
+</script>
+</body>
+</html>
